@@ -47,6 +47,13 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress, showAliceGr
     const width = dimensions.width - margin.left - margin.right;
     const height = dimensions.height - margin.top - margin.bottom;
 
+    // Define Clip Path
+    svg.append("defs").append("clipPath")
+       .attr("id", "chart-clip")
+       .append("rect")
+       .attr("width", width)
+       .attr("height", height);
+
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -77,6 +84,8 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress, showAliceGr
 
         const xDom = xScale.domain();
         const yDom = yScale.domain();
+        
+        // Check 4 corners of the visible graph area
         const corners = [
             inverseTransform(xDom[0], yDom[0]),
             inverseTransform(xDom[1], yDom[0]),
@@ -84,70 +93,54 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress, showAliceGr
             inverseTransform(xDom[0], yDom[1])
         ];
 
-        const minXp = Math.floor(Math.min(...corners.map(c => c.xp)));
-        const maxXp = Math.ceil(Math.max(...corners.map(c => c.xp)));
-        const minTp = Math.floor(Math.min(...corners.map(c => c.tp)));
-        const maxTp = Math.ceil(Math.max(...corners.map(c => c.tp)));
+        const minTp = Math.min(...corners.map(c => c.tp));
+        const maxTp = Math.max(...corners.map(c => c.tp));
 
-        // Transform (x', t') back to (x, t) for drawing
+        // Use Math.ceil and Math.floor to ensure we only iterate integers within the range
+        const startTp = Math.ceil(minTp);
+        const endTp = Math.floor(maxTp);
+
+        const gridG = g.append("g")
+            .attr("class", "alice-grid")
+            .style("opacity", opacity)
+            .attr("clip-path", "url(#chart-clip)");
+
+        // Transform (x', t') back to (x, t) for labels
         const transform = (xp: number, tp: number) => ({
             x: origin.x + gammaFactor * (xp + velocity * tp),
             t: origin.t + gammaFactor * (tp + velocity * xp)
         });
 
-        const gridG = g.append("g").attr("class", "alice-grid").style("opacity", opacity + 0.2); // Slightly more visible but thinner
-
-        // Constant t' lines (Spatial axes for different times)
-        // Only iterate integers
-        for (let tp = minTp; tp <= maxTp; tp += 1) {
-            const start = transform(minXp - 2, tp);
-            const end = transform(maxXp + 2, tp);
+        // 1. Draw Constant t' lines (Alice's lines of simultaneity)
+        // t = origin.t + v*(x - origin.x) + tp/gamma
+        for (let tp = startTp; tp <= endTp; tp += 1) {
+            // We calculate the line across the full visible width
+            const x1 = xDom[0];
+            const x2 = xDom[1];
             
-            gridG.append("line")
-                .attr("x1", xScale(start.x))
-                .attr("y1", yScale(start.t))
-                .attr("x2", xScale(end.x))
-                .attr("y2", yScale(end.t))
-                .attr("stroke", color)
-                .attr("stroke-width", 1)
-                .attr("stroke-dasharray", "3,3");
+            const t1 = origin.t + velocity * (x1 - origin.x) + tp / gammaFactor;
+            const t2 = origin.t + velocity * (x2 - origin.x) + tp / gammaFactor;
 
-            // Label at x'=0 (Alice's worldline) if visible
+            gridG.append("line")
+                .attr("x1", xScale(x1))
+                .attr("y1", yScale(t1))
+                .attr("x2", xScale(x2))
+                .attr("y2", yScale(t2))
+                .attr("stroke", color)
+                .attr("stroke-width", 0.5)
+                .attr("stroke-dasharray", "4,4");
+
+            // Add label near x=0 (Alice's path) if visible, or clamp to edge
             const labelPos = transform(0, tp);
+            // Basic label placement
             if (labelPos.x >= xDom[0] && labelPos.x <= xDom[1] && labelPos.t >= yDom[0] && labelPos.t <= yDom[1]) {
-                gridG.append("text")
+                 gridG.append("text")
                     .attr("x", xScale(labelPos.x) + 4)
                     .attr("y", yScale(labelPos.t) - 2)
                     .attr("fill", color)
-                    .attr("font-size", "10px")
+                    .attr("font-size", "9px")
                     .attr("font-weight", "bold")
-                    .text(`${tp}`);
-            }
-        }
-
-        // Constant x' lines (Time axes for different positions)
-        for (let xp = minXp; xp <= maxXp; xp += 1) {
-            const start = transform(xp, minTp - 2);
-            const end = transform(xp, maxTp + 2);
-            
-            gridG.append("line")
-                .attr("x1", xScale(start.x))
-                .attr("y1", yScale(start.t))
-                .attr("x2", xScale(end.x))
-                .attr("y2", yScale(end.t))
-                .attr("stroke", color)
-                .attr("stroke-width", 1)
-                .attr("stroke-dasharray", "3,3");
-
-             // Label at t'=0 (Alice's x-axis) if visible
-            const labelPos = transform(xp, 0);
-            if (labelPos.x >= xDom[0] && labelPos.x <= xDom[1] && labelPos.t >= yDom[0] && labelPos.t <= yDom[1]) {
-                gridG.append("text")
-                    .attr("x", xScale(labelPos.x) + 2)
-                    .attr("y", yScale(labelPos.t) + 10)
-                    .attr("fill", color)
-                    .attr("font-size", "10px")
-                    .text(`x'=${xp}`);
+                    .text(`t'=${tp}`);
             }
         }
     };
@@ -155,13 +148,13 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress, showAliceGr
     // 0. Draw Alice's Grid if enabled
     if (showAliceGrid) {
         if (step === SimulationStep.SETUP || step === SimulationStep.OUTBOUND) {
-            drawSkewedGrid(v, {x:0, t:0}, "#06b6d4", 0.3); // Cyan
+            drawSkewedGrid(v, {x:0, t:0}, "#22d3ee", 0.5); // Cyan
         } else if (step === SimulationStep.INBOUND || step === SimulationStep.CONCLUSION) {
-            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#8b5cf6", 0.3); // Violet
+            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#a78bfa", 0.5); // Violet
         } else if (step === SimulationStep.TURNAROUND) {
             // Show both during turnaround to emphasize the shift
-            drawSkewedGrid(v, {x:0, t:0}, "#06b6d4", 0.2); 
-            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#8b5cf6", 0.2);
+            drawSkewedGrid(v, {x:0, t:0}, "#22d3ee", 0.3); 
+            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#a78bfa", 0.3);
         }
     }
 

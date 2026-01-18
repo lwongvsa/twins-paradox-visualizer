@@ -11,6 +11,8 @@ interface Props {
   isPlaying: boolean;
   showAliceGrid: boolean;
   setShowAliceGrid: (v: boolean) => void;
+  playbackSpeed: number;
+  setPlaybackSpeed: (speed: number) => void;
 }
 
 const ControlPanel: React.FC<Props> = ({ 
@@ -21,7 +23,9 @@ const ControlPanel: React.FC<Props> = ({
   handlePlayPause,
   isPlaying,
   showAliceGrid,
-  setShowAliceGrid
+  setShowAliceGrid,
+  playbackSpeed,
+  setPlaybackSpeed
 }) => {
   
   const steps = Object.values(SimulationStep);
@@ -120,6 +124,26 @@ const ControlPanel: React.FC<Props> = ({
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-white border-b border-slate-600 pb-2">Simulation Control</h2>
         
+        <div>
+           <div className="flex justify-between text-xs text-slate-400 mb-1">
+             <span>Animation Speed</span>
+             <span>{(playbackSpeed / 0.005).toFixed(1)}x</span>
+           </div>
+           <input
+            type="range"
+            min="0.001"
+            max="0.02"
+            step="0.001"
+            value={playbackSpeed}
+            onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+            className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+           />
+           <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+             <span>Slow</span>
+             <span>Fast</span>
+           </div>
+        </div>
+
         <div className="flex items-center justify-between gap-2">
             <button 
                 onClick={handlePrev}

@@ -15,15 +15,14 @@ const App: React.FC = () => {
   const [progress, setProgress] = useState(0); // 0 to 1 for current step animation
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAliceGrid, setShowAliceGrid] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(0.005);
   const animationRef = useRef<number>();
-
-  const ANIMATION_SPEED = 0.005;
 
   useEffect(() => {
     if (isPlaying) {
       const animate = () => {
         setProgress(prev => {
-          const next = prev + ANIMATION_SPEED;
+          const next = prev + playbackSpeed;
           if (next >= 1) {
             // Auto-advance step logic
             const steps = Object.values(SimulationStep);
@@ -49,7 +48,7 @@ const App: React.FC = () => {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [isPlaying, step]);
+  }, [isPlaying, step, playbackSpeed]);
 
   // Reset progress when manually changing steps
   const handleStepChange = (newStep: SimulationStep) => {
@@ -97,6 +96,8 @@ const App: React.FC = () => {
             isPlaying={isPlaying}
             showAliceGrid={showAliceGrid}
             setShowAliceGrid={setShowAliceGrid}
+            playbackSpeed={playbackSpeed}
+            setPlaybackSpeed={setPlaybackSpeed}
           />
         </section>
 
