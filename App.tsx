@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [step, setStep] = useState<SimulationStep>(SimulationStep.SETUP);
   const [progress, setProgress] = useState(0); // 0 to 1 for current step animation
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showAliceGrid, setShowAliceGrid] = useState(false);
   const animationRef = useRef<number>();
 
   const ANIMATION_SPEED = 0.005;
@@ -94,6 +95,8 @@ const App: React.FC = () => {
             progress={progress}
             handlePlayPause={handlePlayPause}
             isPlaying={isPlaying}
+            showAliceGrid={showAliceGrid}
+            setShowAliceGrid={setShowAliceGrid}
           />
         </section>
 
@@ -103,6 +106,7 @@ const App: React.FC = () => {
             params={params}
             step={step}
             progress={progress}
+            showAliceGrid={showAliceGrid}
           />
         </section>
 

@@ -9,6 +9,8 @@ interface Props {
   progress: number;
   handlePlayPause: () => void;
   isPlaying: boolean;
+  showAliceGrid: boolean;
+  setShowAliceGrid: (v: boolean) => void;
 }
 
 const ControlPanel: React.FC<Props> = ({ 
@@ -17,7 +19,9 @@ const ControlPanel: React.FC<Props> = ({
   step, 
   setStep,
   handlePlayPause,
-  isPlaying
+  isPlaying,
+  showAliceGrid,
+  setShowAliceGrid
 }) => {
   
   const steps = Object.values(SimulationStep);
@@ -88,6 +92,27 @@ const ControlPanel: React.FC<Props> = ({
             <span className="block text-slate-500">Time Dilation</span>
             <span className="text-lg font-mono text-emerald-400">1 : {gamma.toFixed(1)}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Visual Options */}
+      <div className="space-y-2">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Visual Options</h2>
+        <div className="flex items-center gap-3">
+          <div className="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+              <input 
+                type="checkbox" 
+                name="toggle" 
+                id="alice-grid-toggle" 
+                checked={showAliceGrid}
+                onChange={(e) => setShowAliceGrid(e.target.checked)}
+                className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-4 checked:border-blue-600"
+              />
+              <label htmlFor="alice-grid-toggle" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${showAliceGrid ? 'bg-blue-600' : 'bg-slate-600'}`}></label>
+          </div>
+          <label htmlFor="alice-grid-toggle" className="text-sm text-slate-200 cursor-pointer">
+              Show Alice's Grid
+          </label>
         </div>
       </div>
 

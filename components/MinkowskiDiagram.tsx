@@ -6,9 +6,10 @@ interface Props {
   params: SimulationParams;
   step: SimulationStep;
   progress: number; // 0 to 1 representing progress within the step
+  showAliceGrid: boolean;
 }
 
-const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
+const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress, showAliceGrid }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
@@ -60,11 +61,115 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
       .domain([-1, totalBobTime + 2])
       .range([height, 0]);
 
+    // Grid Helpers
+    const drawSkewedGrid = (velocity: number, origin: {x: number, t: number}, color: string, opacity: number) => {
+        const gammaFactor = 1 / Math.sqrt(1 - velocity * velocity);
+        
+        // Inverse transform: find min/max x' and t' visible in the viewport
+        const inverseTransform = (x: number, t: number) => {
+            const dx = x - origin.x;
+            const dt = t - origin.t;
+            return {
+                xp: gammaFactor * (dx - velocity * dt),
+                tp: gammaFactor * (dt - velocity * dx)
+            };
+        };
+
+        const xDom = xScale.domain();
+        const yDom = yScale.domain();
+        const corners = [
+            inverseTransform(xDom[0], yDom[0]),
+            inverseTransform(xDom[1], yDom[0]),
+            inverseTransform(xDom[1], yDom[1]),
+            inverseTransform(xDom[0], yDom[1])
+        ];
+
+        const minXp = Math.floor(Math.min(...corners.map(c => c.xp)));
+        const maxXp = Math.ceil(Math.max(...corners.map(c => c.xp)));
+        const minTp = Math.floor(Math.min(...corners.map(c => c.tp)));
+        const maxTp = Math.ceil(Math.max(...corners.map(c => c.tp)));
+
+        // Transform (x', t') back to (x, t) for drawing
+        const transform = (xp: number, tp: number) => ({
+            x: origin.x + gammaFactor * (xp + velocity * tp),
+            t: origin.t + gammaFactor * (tp + velocity * xp)
+        });
+
+        const gridG = g.append("g").attr("class", "alice-grid").style("opacity", opacity + 0.2); // Slightly more visible but thinner
+
+        // Constant t' lines (Spatial axes for different times)
+        // Only iterate integers
+        for (let tp = minTp; tp <= maxTp; tp += 1) {
+            const start = transform(minXp - 2, tp);
+            const end = transform(maxXp + 2, tp);
+            
+            gridG.append("line")
+                .attr("x1", xScale(start.x))
+                .attr("y1", yScale(start.t))
+                .attr("x2", xScale(end.x))
+                .attr("y2", yScale(end.t))
+                .attr("stroke", color)
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3,3");
+
+            // Label at x'=0 (Alice's worldline) if visible
+            const labelPos = transform(0, tp);
+            if (labelPos.x >= xDom[0] && labelPos.x <= xDom[1] && labelPos.t >= yDom[0] && labelPos.t <= yDom[1]) {
+                gridG.append("text")
+                    .attr("x", xScale(labelPos.x) + 4)
+                    .attr("y", yScale(labelPos.t) - 2)
+                    .attr("fill", color)
+                    .attr("font-size", "10px")
+                    .attr("font-weight", "bold")
+                    .text(`${tp}`);
+            }
+        }
+
+        // Constant x' lines (Time axes for different positions)
+        for (let xp = minXp; xp <= maxXp; xp += 1) {
+            const start = transform(xp, minTp - 2);
+            const end = transform(xp, maxTp + 2);
+            
+            gridG.append("line")
+                .attr("x1", xScale(start.x))
+                .attr("y1", yScale(start.t))
+                .attr("x2", xScale(end.x))
+                .attr("y2", yScale(end.t))
+                .attr("stroke", color)
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3,3");
+
+             // Label at t'=0 (Alice's x-axis) if visible
+            const labelPos = transform(xp, 0);
+            if (labelPos.x >= xDom[0] && labelPos.x <= xDom[1] && labelPos.t >= yDom[0] && labelPos.t <= yDom[1]) {
+                gridG.append("text")
+                    .attr("x", xScale(labelPos.x) + 2)
+                    .attr("y", yScale(labelPos.t) + 10)
+                    .attr("fill", color)
+                    .attr("font-size", "10px")
+                    .text(`x'=${xp}`);
+            }
+        }
+    };
+
+    // 0. Draw Alice's Grid if enabled
+    if (showAliceGrid) {
+        if (step === SimulationStep.SETUP || step === SimulationStep.OUTBOUND) {
+            drawSkewedGrid(v, {x:0, t:0}, "#06b6d4", 0.3); // Cyan
+        } else if (step === SimulationStep.INBOUND || step === SimulationStep.CONCLUSION) {
+            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#8b5cf6", 0.3); // Violet
+        } else if (step === SimulationStep.TURNAROUND) {
+            // Show both during turnaround to emphasize the shift
+            drawSkewedGrid(v, {x:0, t:0}, "#06b6d4", 0.2); 
+            drawSkewedGrid(-v, {x: dist, t: bobTimeOneWay}, "#8b5cf6", 0.2);
+        }
+    }
+
     // 1. Grid & Axes
     const xAxis = d3.axisBottom(xScale);
     const yAxis = d3.axisLeft(yScale);
 
-    // Grid lines
+    // Standard Grid lines (Bob)
     g.append("g")
       .attr("class", "grid opacity-10")
       .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(() => ""))
@@ -96,11 +201,12 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
 
     // 2. Light Cones (45 degrees)
     const drawLightCone = (tx: number, ty: number) => {
+      const size = 10;
       g.append("line")
         .attr("x1", xScale(tx))
         .attr("y1", yScale(ty))
-        .attr("x2", xScale(tx + 5))
-        .attr("y2", yScale(ty + 5))
+        .attr("x2", xScale(tx + size))
+        .attr("y2", yScale(ty + size))
         .attr("stroke", "#fbbf24") // Amber
         .attr("stroke-dasharray", "4")
         .attr("opacity", 0.5);
@@ -108,11 +214,21 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
       g.append("line")
         .attr("x1", xScale(tx))
         .attr("y1", yScale(ty))
-        .attr("x2", xScale(tx - 5))
-        .attr("y2", yScale(ty + 5))
+        .attr("x2", xScale(tx - size))
+        .attr("y2", yScale(ty + size))
         .attr("stroke", "#fbbf24")
         .attr("stroke-dasharray", "4")
         .attr("opacity", 0.5);
+        
+      // Label for Light
+      g.append("text")
+        .attr("x", xScale(tx + 2))
+        .attr("y", yScale(ty + 2) - 5)
+        .attr("fill", "#fbbf24")
+        .attr("transform", `rotate(-45, ${xScale(tx+2)}, ${yScale(ty+2)})`)
+        .attr("font-size", "10px")
+        .attr("opacity", 0.8)
+        .text("Light Speed (c)");
     };
     drawLightCone(0, 0);
 
@@ -184,7 +300,6 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
       // Show sweep
       showSimultaneity = true;
       // Interpolate slope from v to -v
-      // Actually we want to show the plane of simultaneity swinging
       // Outbound slope: v
       // Inbound slope: -v
       const slopeStart = v;
@@ -235,10 +350,7 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
     // Draw Line of Simultaneity (Alice's "Now")
     if (showSimultaneity) {
       // Equation: t - t_alice = slope * (x - x_alice)
-      // We want to find where this line hits x=0 (Bob's worldline)
-      // t_bob_intercept - t_alice = slope * (0 - x_alice)
       // t_bob_intercept = t_alice - slope * x_alice
-      
       const t_bob_intercept = currentAlicePos.t - simultaneitySlope * currentAlicePos.x;
       
       // Draw line from Alice to Bob's axis (and slightly beyond)
@@ -273,7 +385,7 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
         .text(`Alice Age: ${calculateAliceAge(step, progress, aliceTimeOneWay).toFixed(2)}y`);
     }
 
-  }, [dimensions, params, step, progress]);
+  }, [dimensions, params, step, progress, showAliceGrid]);
 
   const calculateAliceAge = (s: SimulationStep, p: number, oneWay: number) => {
     switch(s) {
@@ -288,7 +400,7 @@ const MinkowskiDiagram: React.FC<Props> = ({ params, step, progress }) => {
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] bg-slate-900 rounded-xl border border-slate-700 shadow-xl overflow-hidden relative">
-        <div className="absolute top-4 right-4 bg-slate-800/80 p-2 rounded text-xs text-slate-300 pointer-events-none">
+        <div className="absolute top-4 right-4 bg-slate-800/80 p-2 rounded text-xs text-slate-300 pointer-events-none z-10">
             Space-Time Diagram
         </div>
         <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="block" />
