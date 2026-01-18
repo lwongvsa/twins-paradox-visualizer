@@ -1,0 +1,5 @@
+{
+  "name": "Twin Paradox Visualizer",
+  "description": "An interactive explanation of the Special Relativity Twin Paradox using dynamic Minkowski diagrams and Gemini AI for context-aware Q&A.",
+  "requestFramePermissions": []
+}
