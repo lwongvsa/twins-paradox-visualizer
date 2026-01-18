@@ -11,6 +11,10 @@ interface Props {
   isPlaying: boolean;
   showAliceGrid: boolean;
   setShowAliceGrid: (v: boolean) => void;
+  showBobSignals: boolean;
+  setShowBobSignals: (v: boolean) => void;
+  showAliceSignals: boolean;
+  setShowAliceSignals: (v: boolean) => void;
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
 }
@@ -24,6 +28,10 @@ const ControlPanel: React.FC<Props> = ({
   isPlaying,
   showAliceGrid,
   setShowAliceGrid,
+  showBobSignals,
+  setShowBobSignals,
+  showAliceSignals,
+  setShowAliceSignals,
   playbackSpeed,
   setPlaybackSpeed
 }) => {
@@ -100,8 +108,10 @@ const ControlPanel: React.FC<Props> = ({
       </div>
 
       {/* Visual Options */}
-      <div className="space-y-2">
-        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Visual Options</h2>
+      <div className="space-y-3">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-1">Visual Options</h2>
+        
+        {/* Alice's Grid */}
         <div className="flex items-center gap-3">
           <div className="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
               <input 
@@ -117,6 +127,60 @@ const ControlPanel: React.FC<Props> = ({
           <label htmlFor="alice-grid-toggle" className="text-sm text-slate-200 cursor-pointer">
               Show Alice's Grid
           </label>
+        </div>
+
+        {/* Signals Section */}
+        <div className="pt-2 border-t border-slate-700/50">
+            <div className="flex items-center gap-2 mb-2 group relative">
+                <span className="text-xs font-semibold text-slate-400">Birthday Messages (Signals)</span>
+                <span className="cursor-help text-slate-500 hover:text-blue-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                    </svg>
+                </span>
+                {/* Tooltip */}
+                <div className="absolute left-0 bottom-6 w-64 p-3 bg-slate-900 text-slate-200 text-xs rounded shadow-xl border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    Visualizes Doppler Shift: Sending signals at 1-year intervals allows each twin to "see" how fast the other is aging. 
+                    <br/><br/>
+                    When moving apart, signals are received less frequently (Redshift). When approaching, signals are received rapidly (Blueshift).
+                </div>
+            </div>
+
+            {/* Bob Signals */}
+            <div className="flex items-center gap-3 mb-2">
+                <div className="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                    <input 
+                        type="checkbox" 
+                        name="toggle-bob" 
+                        id="bob-signals-toggle" 
+                        checked={showBobSignals}
+                        onChange={(e) => setShowBobSignals(e.target.checked)}
+                        className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-4 checked:border-blue-500"
+                    />
+                    <label htmlFor="bob-signals-toggle" className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer ${showBobSignals ? 'bg-blue-500' : 'bg-slate-600'}`}></label>
+                </div>
+                <label htmlFor="bob-signals-toggle" className="text-xs text-slate-300 cursor-pointer">
+                    Bob sends yearly (Blue)
+                </label>
+            </div>
+
+            {/* Alice Signals */}
+            <div className="flex items-center gap-3">
+                <div className="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
+                    <input 
+                        type="checkbox" 
+                        name="toggle-alice" 
+                        id="alice-signals-toggle" 
+                        checked={showAliceSignals}
+                        onChange={(e) => setShowAliceSignals(e.target.checked)}
+                        className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-4 checked:border-red-500"
+                    />
+                    <label htmlFor="alice-signals-toggle" className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer ${showAliceSignals ? 'bg-red-500' : 'bg-slate-600'}`}></label>
+                </div>
+                <label htmlFor="alice-signals-toggle" className="text-xs text-slate-300 cursor-pointer">
+                    Alice sends yearly (Red)
+                </label>
+            </div>
         </div>
       </div>
 
