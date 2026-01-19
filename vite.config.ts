@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     // For GitHub Pages, if your repo is at username.github.io/repo-name, set base to '/repo-name/'
     // If it's at username.github.io (root), set base to '/'
-    const base = process.env.GITHUB_PAGES_BASE || '/';
+    const base = process.env.GITHUB_PAGES_BASE || '/twins-paradox-visualizer/';
     
     return {
       base: base,
