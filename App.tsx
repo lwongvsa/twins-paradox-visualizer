@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MinkowskiDiagram from './components/MinkowskiDiagram';
 import ControlPanel from './components/ControlPanel';
-import GeminiChat from './components/GeminiChat';
 import { SimulationParams, SimulationStep } from './types';
 
 const App: React.FC = () => {
@@ -80,14 +79,14 @@ const App: React.FC = () => {
             <p className="text-slate-400 text-sm mt-1">Based on relativity principles. Visualizing the loss of simultaneity.</p>
         </div>
         <div className="hidden md:block text-right text-xs text-slate-500">
-            Powered by React, D3 & Gemini
+            Powered by React & D3
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-10 gap-6 h-[calc(100vh-140px)]">
         
-        {/* Left Column: Controls (3 cols) */}
-        <section className="lg:col-span-3 h-full order-2 lg:order-1">
+        {/* Left Column: Controls (4 cols) */}
+        <section className="lg:col-span-4 h-full order-2 lg:order-1">
           <ControlPanel 
             params={params}
             setParams={setParams}
@@ -117,11 +116,6 @@ const App: React.FC = () => {
             showBobSignals={showBobSignals}
             showAliceSignals={showAliceSignals}
           />
-        </section>
-
-        {/* Right Column: AI Chat (3 cols) */}
-        <section className="lg:col-span-3 h-full order-3">
-          <GeminiChat params={params} step={step} />
         </section>
 
       </main>

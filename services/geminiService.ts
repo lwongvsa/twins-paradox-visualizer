@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { SimulationParams, SimulationStep } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Use Vite's environment variables (VITE_ prefix for client-side access)
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY || '';
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const askGemini = async (
   question: string,
@@ -9,6 +11,10 @@ export const askGemini = async (
   currentStep: SimulationStep,
   history: { role: string; parts: { text: string }[] }[]
 ): Promise<string> => {
+  if (!ai || !apiKey) {
+    return "AI chat feature is not available. Please set VITE_GEMINI_API_KEY environment variable to enable this feature.";
+  }
+  
   try {
     const model = 'gemini-3-flash-preview';
     
