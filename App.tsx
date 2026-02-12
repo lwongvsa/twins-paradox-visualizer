@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MinkowskiDiagram from './components/MinkowskiDiagram';
 import ControlPanel from './components/ControlPanel';
+import GeminiChat from './components/GeminiChat';
 import { SimulationParams, SimulationStep } from './types';
 
 const App: React.FC = () => {
@@ -14,8 +15,6 @@ const App: React.FC = () => {
   const [progress, setProgress] = useState(0); // 0 to 1 for current step animation
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAliceGrid, setShowAliceGrid] = useState(false);
-  const [showBobSignals, setShowBobSignals] = useState(false);
-  const [showAliceSignals, setShowAliceSignals] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(0.005);
   const animationRef = useRef<number>();
 
@@ -79,14 +78,14 @@ const App: React.FC = () => {
             <p className="text-slate-400 text-sm mt-1">Based on relativity principles. Visualizing the loss of simultaneity.</p>
         </div>
         <div className="hidden md:block text-right text-xs text-slate-500">
-            Powered by React & D3
+            Powered by React, D3 & Gemini
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-10 gap-6 h-[calc(100vh-140px)]">
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
         
-        {/* Left Column: Controls (4 cols) */}
-        <section className="lg:col-span-4 h-full order-2 lg:order-1">
+        {/* Left Column: Controls (3 cols) */}
+        <section className="lg:col-span-3 h-full order-2 lg:order-1">
           <ControlPanel 
             params={params}
             setParams={setParams}
@@ -97,10 +96,6 @@ const App: React.FC = () => {
             isPlaying={isPlaying}
             showAliceGrid={showAliceGrid}
             setShowAliceGrid={setShowAliceGrid}
-            showBobSignals={showBobSignals}
-            setShowBobSignals={setShowBobSignals}
-            showAliceSignals={showAliceSignals}
-            setShowAliceSignals={setShowAliceSignals}
             playbackSpeed={playbackSpeed}
             setPlaybackSpeed={setPlaybackSpeed}
           />
@@ -113,9 +108,12 @@ const App: React.FC = () => {
             step={step}
             progress={progress}
             showAliceGrid={showAliceGrid}
-            showBobSignals={showBobSignals}
-            showAliceSignals={showAliceSignals}
           />
+        </section>
+
+        {/* Right Column: AI Chat (3 cols) */}
+        <section className="lg:col-span-3 h-full order-3">
+          <GeminiChat params={params} step={step} />
         </section>
 
       </main>
